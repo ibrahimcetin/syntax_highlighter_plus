@@ -1,9 +1,11 @@
 import 'package:flutter/widgets.dart';
 
-import 'grammar_registry.dart';
-import 'syntax_highlighter.dart';
-import 'theme_registry.dart';
-import 'utils.dart';
+import 'src/grammar_registry.dart';
+import 'src/syntax_highlighter.dart';
+import 'src/theme_registry.dart';
+import 'src/utils.dart';
+
+export 'src/utils.dart' show LineRange;
 
 /// High-level syntax-highlighting helper.
 ///
