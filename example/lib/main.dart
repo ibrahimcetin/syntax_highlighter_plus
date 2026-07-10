@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import 'package:syntax_highlighter_plus/syntax_highlighter_plus.dart';
 
 void main() {
