@@ -11,23 +11,49 @@ class ExampleApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Syntax Highlighter Plus — Example',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          brightness: MediaQuery.platformBrightnessOf(context),
-          dynamicSchemeVariant: DynamicSchemeVariant.neutral,
-          seedColor: Colors.cyan,
-        ),
-        useMaterial3: true,
+      title: 'Syntax Highlighter Plus',
+      theme: ThemeData.dark(),
+      home: Scaffold(
+        appBar: AppBar(title: const Text('syntax_highlighter_plus')),
+        body: const HighlightedText(),
       ),
-      home: const CodeViewerPage(),
     );
   }
 }
 
-// ---------------------------------------------------------------------------
-// Sample Dart source to display
-// ---------------------------------------------------------------------------
+class HighlightedText extends StatelessWidget {
+  const HighlightedText({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final syntaxHighlighter = SyntaxHighlighterPlus(theme: 'github-dark');
+    final highlightFuture = syntaxHighlighter.highlight('dart', _dartSample);
+
+    return FutureBuilder<TextSpan>(
+      future: highlightFuture,
+      builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          return Center(child: Text('Error: ${snapshot.error}'));
+        }
+
+        // Get the highlighted text span, falling back to non-highlighted text if not available.
+        final span = snapshot.data ?? const TextSpan(text: _dartSample);
+
+        // Display the highlighted text in a scrollable view.
+        return SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: SelectableText.rich(
+              span,
+              style: const TextStyle(fontFamily: 'monospace', height: 1.6),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
 
 const _dartSample = r'''
 void main() {
@@ -54,65 +80,3 @@ class Counter {
   String toString() => 'Counter($_count)';
 }
 ''';
-
-// ---------------------------------------------------------------------------
-// Page
-// ---------------------------------------------------------------------------
-
-class CodeViewerPage extends StatefulWidget {
-  const CodeViewerPage({super.key});
-
-  @override
-  State<CodeViewerPage> createState() => _CodeViewerPageState();
-}
-
-class _CodeViewerPageState extends State<CodeViewerPage> {
-  final _highlighter = SyntaxHighlighterPlus();
-  late Future<TextSpan> _future;
-  bool _initialized = false;
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    // Initialize once — we need context here for Theme.of(context) inside highlight().
-    if (!_initialized) {
-      _initialized = true;
-      _future = _highlighter.highlight(context, _dartSample, 'dart');
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('syntax_highlighter_plus'),
-        centerTitle: false,
-      ),
-      body: FutureBuilder<TextSpan>(
-        future: _future,
-        builder: (context, snapshot) {
-          if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}'));
-          }
-
-          // While loading: show plain text. When done: show highlighted text.
-          final span = snapshot.data ?? const TextSpan(text: _dartSample);
-          return _codeView(span);
-        },
-      ),
-    );
-  }
-
-  Widget _codeView(TextSpan span) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: SelectableText.rich(
-          span,
-          style: const TextStyle(fontFamily: 'monospace', height: 1.6),
-        ),
-      ),
-    );
-  }
-}
