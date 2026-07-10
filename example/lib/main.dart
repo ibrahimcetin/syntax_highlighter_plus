@@ -34,7 +34,7 @@ class HighlightedText extends StatelessWidget {
       future: highlightFuture,
       builder: (context, snapshot) {
         if (snapshot.hasError) {
-          return Center(child: Text('Error: ${snapshot.error}'));
+          return Center(child: SelectableText('Error: ${snapshot.error}'));
         }
 
         // Get the highlighted text span, falling back to non-highlighted text if not available.
