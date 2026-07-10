@@ -4,14 +4,16 @@
 
 import 'dart:collection';
 
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 
-import 'utils.dart';
-import 'colors.dart';
 import 'span_parser.dart';
+import 'syntax_theme.dart';
+import 'utils.dart';
 
 class SyntaxHighlighter {
-  SyntaxHighlighter.withGrammar({required this.source, required this.grammar});
+  SyntaxHighlighter({required this.grammar, required this.source});
+
+  final Grammar grammar;
 
   final String source;
   late String _processedSource;
@@ -20,22 +22,22 @@ class SyntaxHighlighter {
 
   int _currentPosition = 0;
 
-  late Map<String, TextStyle> _scopeStyles;
-
-  final Grammar grammar;
+  SyntaxTheme? _syntaxTheme;
 
   /// Returns the highlighted [source] in [TextSpan] form.
   ///
+  /// Pass a [theme] to apply colors from a [SyntaxTheme]. When [theme] is
+  /// `null` all spans are unstyled (plain text).
+  ///
   /// If [lineRange] is provided, only the lines between
   /// `[lineRange.begin, lineRange.end]` will be returned.
-  TextSpan highlight(ColorScheme colorScheme, {LineRange? lineRange}) {
-    // Generate the styling for the various scopes based on the current theme.
-    _scopeStyles = _buildSyntaxColorTable(colorScheme);
+  TextSpan highlight({SyntaxTheme? theme, LineRange? lineRange}) {
+    _syntaxTheme = theme;
     _currentPosition = 0;
     _processedSource = source;
     if (lineRange != null) {
       _processedSource = _processedSource
-          .split('\n')
+          .split('\n') //
           .sublist(lineRange.begin - 1, lineRange.end)
           .join('\n');
     }
@@ -54,22 +56,22 @@ class SyntaxHighlighter {
   /// applied in the order the scopes are listed (i.e., later scope styles take
   /// precedence).
   TextStyle _getStyleForSpan() {
-    if (_spanStack.isEmpty) {
-      return const TextStyle();
-    }
+    if (_spanStack.isEmpty) return const TextStyle();
     final scopes = _spanStack.last.scopes;
+    if (scopes.isEmpty) return const TextStyle();
 
-    if (scopes.isEmpty) {
-      return const TextStyle();
-    } else if (scopes.length == 1) {
-      return _scopeStyles[scopes.first] ?? const TextStyle();
-    } else {
-      var style = const TextStyle();
-      for (final scope in scopes) {
-        style = style.merge(_scopeStyles[scope] ?? const TextStyle());
-      }
-      return style;
+    var style = const TextStyle();
+    for (final scope in scopes) {
+      style = style.merge(_resolveScope(scope));
     }
+    return style;
+  }
+
+  /// Resolves a single TextMate [scope] to a [TextStyle] using the active
+  /// [SyntaxTheme]. Returns an empty [TextStyle] when no theme is set or no
+  /// rule matches the scope.
+  TextStyle _resolveScope(String scope) {
+    return _syntaxTheme?.resolveStyle(scope) ?? const TextStyle();
   }
 
   /// Enters a new scope for a span of text. Returns a [List<TextSpan>]
@@ -128,9 +130,7 @@ class SyntaxHighlighter {
     return sourceSpans;
   }
 
-  bool _atNewline() =>
-      String.fromCharCode(_processedSource.codeUnitAt(_currentPosition)) ==
-      '\n';
+  bool _atNewline() => String.fromCharCode(_processedSource.codeUnitAt(_currentPosition)) == '\n';
 
   int? _processNewlines(List<TextSpan> sourceSpans, int currentScopeBegin) {
     final text = _processedSource.substring(
@@ -151,99 +151,7 @@ class SyntaxHighlighter {
       sourceSpans.add(const TextSpan(text: '\n'));
       ++_currentPosition;
     } while ((_currentPosition < _processedSource.length) &&
-        (String.fromCharCode(_processedSource.codeUnitAt(_currentPosition)) ==
-            '\n'));
+        (String.fromCharCode(_processedSource.codeUnitAt(_currentPosition)) == '\n'));
     return _currentPosition;
-  }
-
-  Map<String, TextStyle> _buildSyntaxColorTable(ColorScheme colorScheme) {
-    final commentStyle = TextStyle(color: colorScheme.commentSyntaxColor);
-    final functionStyle = TextStyle(color: colorScheme.functionSyntaxColor);
-    final declarationStyle = TextStyle(
-      color: colorScheme.declarationsSyntaxColor,
-    );
-    final modifierStyle = TextStyle(color: colorScheme.modifierSyntaxColor);
-    final controlFlowStyle = TextStyle(
-      color: colorScheme.controlFlowSyntaxColor,
-    );
-    final variableStyle = TextStyle(color: colorScheme.variableSyntaxColor);
-    final stringStyle = TextStyle(color: colorScheme.stringSyntaxColor);
-    final numericConstantStyle = TextStyle(
-      color: colorScheme.numericConstantSyntaxColor,
-    );
-
-    // Note: these scopes are defined in assets/dart_syntax.json
-    const modifierScopes = <String>[
-      'constant.language.dart',
-      'keyword.cast.dart',
-      'keyword.declaration.dart',
-      'keyword.other.import.dart',
-      'storage.modifier.dart',
-      'storage.type.annotation.dart',
-      'storage.type.primitive.dart',
-    ];
-
-    const commentScopes = <String>[
-      'comment.block.dart',
-      'comment.block.documentation.dart',
-      'comment.block.empty.dart',
-      'comment.line.double-slash.dart',
-    ];
-
-    const declarationScopes = <String>[
-      'support.class.dart',
-      'variable.language.dart',
-    ];
-
-    const numericConstantScopes = <String>['constant.numeric.dart'];
-
-    const functionScopes = <String>['entity.name.function.dart'];
-
-    const controlFlowScopes = <String>[
-      'keyword.control.catch-exception.dart',
-      'keyword.control.dart',
-      'keyword.control.return.dart',
-      // While 'new' is not a control flow keyword, it uses the control flow
-      // color scheme so we include it here.
-      'keyword.control.new.dart',
-    ];
-
-    const stringScopes = <String>[
-      'string.interpolated.double.dart',
-      'string.interpolated.single.dart',
-      'string.interpolated.triple.double.dart',
-      'string.interpolated.triple.single.dart',
-      'string.quoted.double.dart',
-      'string.quoted.single.dart',
-      'string.quoted.triple.double.dart',
-      'string.quoted.triple.single.dart',
-    ];
-
-    const variableScopes = <String>[
-      // DartDoc code reference
-      'variable.name.source.dart',
-      // DartDoc in-line code
-      'variable.other.source.dart',
-      // Highlights code in strings (e.g., '$foo' or '${foo.bar()}')
-      'variable.parameter.dart',
-    ];
-
-    Map<String, TextStyle> scopeTextStyleMapper(
-      List<String> scopes,
-      TextStyle style,
-    ) {
-      return {for (final scope in scopes) scope: style};
-    }
-
-    return <String, TextStyle>{
-      ...scopeTextStyleMapper(modifierScopes, modifierStyle),
-      ...scopeTextStyleMapper(commentScopes, commentStyle),
-      ...scopeTextStyleMapper(declarationScopes, declarationStyle),
-      ...scopeTextStyleMapper(numericConstantScopes, numericConstantStyle),
-      ...scopeTextStyleMapper(functionScopes, functionStyle),
-      ...scopeTextStyleMapper(controlFlowScopes, controlFlowStyle),
-      ...scopeTextStyleMapper(stringScopes, stringStyle),
-      ...scopeTextStyleMapper(variableScopes, variableStyle),
-    };
   }
 }
