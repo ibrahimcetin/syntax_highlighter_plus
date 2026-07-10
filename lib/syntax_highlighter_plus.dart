@@ -1,23 +1,9 @@
-import 'dart:convert';
-
 import 'package:flutter/widgets.dart';
-import 'package:flutter/services.dart';
 
-import 'span_parser.dart';
 import 'syntax_highlighter.dart';
 import 'syntax_theme.dart';
 import 'utils.dart';
-
-/// Languages with bundled TextMate grammar support.
-enum SupportedLanguage {
-  dart('dart'),
-  swift('swift');
-
-  const SupportedLanguage(this.id);
-
-  /// The grammar file name (without extension) under `assets/grammars/`.
-  final String id;
-}
+import 'grammar_registry.dart';
 
 /// Bundled color themes.
 enum SupportedTheme {
@@ -40,6 +26,9 @@ enum SupportedTheme {
 /// final span = await highlighter.highlight('dart', _source);
 /// ```
 class SyntaxHighlighterPlus {
+  /// Returns the list of supported languages.
+  static List<String> get supportedLanguages => GrammarRegistry.supportedLanguages;
+
   /// Creates a highlighter that applies [theme] when rendering.
   ///
   /// [theme] must be one of the [SupportedTheme] ids (e.g. `'github-dark'`),
@@ -50,45 +39,6 @@ class SyntaxHighlighterPlus {
   ///
   /// Must be a [SupportedTheme] id, or `null` for unstyled output.
   final String? theme;
-
-  // -------------------------------------------------------------------------
-  // Static grammar loader
-  // -------------------------------------------------------------------------
-
-  static final Map<String, Grammar> _grammarCache = {};
-
-  /// Returns the [Grammar] for [language], loading and parsing it from the
-  /// bundled asset the first time it is requested.
-  ///
-  /// Throws an [ArgumentError] if [language] does not match any bundled grammar.
-  static Future<Grammar> grammarFor(String language) async {
-    final normalized = language.toLowerCase().trim();
-
-    // Return from cache if already loaded.
-    if (_grammarCache.containsKey(normalized)) {
-      return _grammarCache[normalized]!;
-    }
-
-    // Validate against the known set of bundled grammars.
-    final supported = SupportedLanguage.values.map((e) => e.id).toSet();
-    if (!supported.contains(normalized)) {
-      throw ArgumentError(
-        'No bundled grammar for "$language". '
-        'Supported languages: ${supported.join(', ')}.',
-      );
-    }
-
-    final jsonString = await rootBundle.loadString(
-      'packages/syntax_highlighter_plus/assets/grammars/$normalized.json',
-    );
-
-    final grammar = Grammar.fromJson(
-      jsonDecode(jsonString) as Map<String, Object?>,
-    );
-
-    _grammarCache[normalized] = grammar;
-    return grammar;
-  }
 
   // -------------------------------------------------------------------------
   // Static theme loader
@@ -119,7 +69,7 @@ class SyntaxHighlighterPlus {
 
   /// Highlights [source] and returns the result as a [TextSpan].
   ///
-  /// * [language] — language id (e.g. `'dart'`). Must be a [SupportedLanguage].
+  /// * [language] — language id (e.g. `'dart'`). Must be a supported grammar id or alias. Check [SyntaxHighlighterPlus.supportedLanguages].
   /// * [lineRange] — optional subset of lines to highlight.
   ///
   /// Colors are driven by the [theme] passed to the constructor. When [theme]
@@ -129,16 +79,10 @@ class SyntaxHighlighterPlus {
     String source, {
     LineRange? lineRange,
   }) async {
-    final grammar = await grammarFor(language);
-    final syntaxHighlighter = SyntaxHighlighter(
-      grammar: grammar,
-      source: source,
-    );
-
     final syntaxTheme = theme != null ? await themeFor(theme!) : null;
-    return syntaxHighlighter.highlight(
-      theme: syntaxTheme,
-      lineRange: lineRange,
-    );
+    final grammar = await GrammarRegistry.grammarFor(language);
+
+    final syntaxHighlighter = SyntaxHighlighter(grammar: grammar, source: source);
+    return syntaxHighlighter.highlight(theme: syntaxTheme, lineRange: lineRange);
   }
 }

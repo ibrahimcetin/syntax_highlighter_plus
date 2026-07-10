@@ -1,3 +1,8 @@
+import 'dart:convert';
+import 'package:flutter/services.dart';
+
+import 'span_parser.dart';
+
 /// Maps markdown fence tags to canonical TextMate grammar ids.
 ///
 /// Internally it maintains two structures:
@@ -129,6 +134,10 @@ class GrammarRegistry {
     'sv': 'verilog',
   };
 
+  /// Every tag that [resolve] accepts — canonical grammar ids plus all
+  /// registered aliases — sorted alphabetically.
+  static List<String> get supportedLanguages => [..._languages, ..._aliases.keys].toList()..sort();
+
   /// Resolves a markdown fence tag (e.g. `py`, `JS`, `objective-c`) to a
   /// canonical grammar id.
   ///
@@ -151,7 +160,33 @@ class GrammarRegistry {
     }
   }
 
-  /// Every tag that [resolve] accepts — canonical grammar ids plus all
-  /// registered aliases — sorted alphabetically.
-  static List<String> get supportedLanguages => [..._languages, ..._aliases.keys].toList()..sort();
+  // -------------------------------------------------------------------------
+  // Grammar Loader
+  // -------------------------------------------------------------------------
+
+  static final Map<String, Grammar> _grammarCache = {};
+
+  /// Returns the [Grammar] for [language], loading and parsing it from the
+  /// bundled asset the first time it is requested.
+  ///
+  /// Throws an [ArgumentError] if [language] does not match any bundled grammar.
+  static Future<Grammar> grammarFor(String language) async {
+    final canonicalId = resolve(language);
+
+    // Return from cache if already loaded.
+    if (_grammarCache.containsKey(canonicalId)) {
+      return _grammarCache[canonicalId]!;
+    }
+
+    final jsonString = await rootBundle.loadString(
+      'packages/syntax_highlighter_plus/assets/grammars/$canonicalId.json',
+    );
+
+    final grammar = Grammar.fromJson(
+      jsonDecode(jsonString) as Map<String, Object?>,
+    );
+
+    _grammarCache[canonicalId] = grammar;
+    return grammar;
+  }
 }
