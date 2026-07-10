@@ -1,7 +1,3 @@
-import 'package:flutter/material.dart';
-
-enum SortDirection { ascending, descending }
-
 /// A Range-like class that works for inclusive ranges of lines in source code.
 class LineRange {
   const LineRange(this.begin, this.end) : assert(begin <= end);
@@ -24,16 +20,4 @@ class LineRange {
 
   @override
   int get hashCode => Object.hash(begin, end);
-}
-
-extension SortDirectionExtension on SortDirection {
-  SortDirection reverse() {
-    return this == SortDirection.ascending
-        ? SortDirection.descending
-        : SortDirection.ascending;
-  }
-}
-
-extension ColorSchemeBrightnessExtension on ColorScheme {
-  bool get isLight => brightness == Brightness.light;
 }
