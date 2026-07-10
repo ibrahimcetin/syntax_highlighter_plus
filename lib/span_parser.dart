@@ -2,6 +2,10 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file or at https://developers.google.com/open-source/licenses/bsd.
 
+// This file is taken from DevTools and should be kept in-sync with any changes
+//
+// https://github.com/flutter/devtools/blob/master/packages/devtools_app/lib/src/screens/debugger/span_parser.dart
+
 import 'dart:collection';
 import 'dart:convert';
 
@@ -165,8 +169,7 @@ class ScopeSpan {
 /// using the 'includes' keyword.
 class Repository {
   Repository.build(Map<String, Object?> grammarJson) {
-    final repositoryJson = (grammarJson['repository'] as Map<String, Object?>?)
-        ?.cast<String, Map<String, Object?>>();
+    final repositoryJson = (grammarJson['repository'] as Map<String, Object?>?)?.cast<String, Map<String, Object?>>();
     if (repositoryJson == null) {
       return;
     }
@@ -258,8 +261,7 @@ abstract class GrammarMatcher {
 class _SimpleMatcher extends GrammarMatcher {
   _SimpleMatcher(super.json)
     : match = RegExp(json['match'] as String, multiLine: true),
-      captures = (json['captures'] as Map<String, Object?>?)
-          ?.cast<String, Map<String, Object?>>(),
+      captures = (json['captures'] as Map<String, Object?>?)?.cast<String, Map<String, Object?>>(),
       super._();
 
   static bool isType(Map<String, Object?> json) {
@@ -297,14 +299,10 @@ class _MultilineMatcher extends GrammarMatcher {
     : begin = RegExp(json['begin'] as String, multiLine: true),
       beginCaptures = json['beginCaptures'] as Map<String, Object?>?,
       contentName = json['contentName'] as String?,
-      end = json['end'] == null
-          ? null
-          : RegExp(json['end'] as String, multiLine: true),
+      end = json['end'] == null ? null : RegExp(json['end'] as String, multiLine: true),
       endCaptures = json['endCaptures'] as Map<String, Object?>?,
       captures = json['captures'] as Map<String, Object?>?,
-      whileCond = json['while'] == null
-          ? null
-          : RegExp(json['while'] as String, multiLine: true),
+      whileCond = json['while'] == null ? null : RegExp(json['while'] as String, multiLine: true),
       patterns = (json['patterns'] as List<Object?>?)
           ?.cast<Map<String, Object?>>()
           .map((e) => GrammarMatcher.fromJson(e))
@@ -312,8 +310,7 @@ class _MultilineMatcher extends GrammarMatcher {
       super._();
 
   static bool isType(Map<String, Object?> json) {
-    return json.containsKey('begin') &&
-        (json.containsKey('end') || json.containsKey('while'));
+    return json.containsKey('begin') && (json.containsKey('end') || json.containsKey('while'));
   }
 
   /// A regular expression which defines the beginning match of this rule. This
@@ -480,9 +477,7 @@ class _MultilineMatcher extends GrammarMatcher {
       _scanToEndOfLine(grammar, contentScanner, scopeStack);
 
       // Process each line until the `while` condition fails.
-      while (!contentScanner.isDone &&
-          whileCond != null &&
-          contentScanner.scan(whileCond!)) {
+      while (!contentScanner.isDone && whileCond != null && contentScanner.scan(whileCond!)) {
         _scanToEndOfLine(grammar, contentScanner, scopeStack);
       }
 
@@ -510,8 +505,7 @@ class _MultilineMatcher extends GrammarMatcher {
       if (end != null) 'end': end!.pattern,
       if (endCaptures != null) 'endCaptures': endCaptures,
       if (whileCond != null) 'while': whileCond!.pattern,
-      if (patterns != null)
-        'patterns': patterns!.map((e) => e.toJson()).toList(),
+      if (patterns != null) 'patterns': patterns!.map((e) => e.toJson()).toList(),
     };
   }
 }
@@ -545,8 +539,7 @@ class _PatternMatcher extends GrammarMatcher {
   Map<String, Object?> toJson() {
     return {
       if (name != null) 'name': name,
-      if (patterns != null)
-        'patterns': patterns!.map((e) => e.toJson()).toList(),
+      if (patterns != null) 'patterns': patterns!.map((e) => e.toJson()).toList(),
     };
   }
 }
@@ -767,6 +760,5 @@ class ScopeStackLocation {
 }
 
 extension LineScannerExtension on LineScanner {
-  ScopeStackLocation get location =>
-      ScopeStackLocation(position: position, line: line, column: column);
+  ScopeStackLocation get location => ScopeStackLocation(position: position, line: line, column: column);
 }
