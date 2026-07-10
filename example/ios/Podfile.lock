@@ -1,0 +1,22 @@
+PODS:
+  - Flutter (1.0.0)
+  - syntax_highlighter_plus (0.0.1):
+    - Flutter
+
+DEPENDENCIES:
+  - Flutter (from `Flutter`)
+  - syntax_highlighter_plus (from `.symlinks/plugins/syntax_highlighter_plus/ios`)
+
+EXTERNAL SOURCES:
+  Flutter:
+    :path: Flutter
+  syntax_highlighter_plus:
+    :path: ".symlinks/plugins/syntax_highlighter_plus/ios"
+
+SPEC CHECKSUMS:
+  Flutter: cabc95a1d2626b1b06e7179b784ebcf0c0cde467
+  syntax_highlighter_plus: c182dc6e21c49e11e5cd4a5c76f0a125b7314289
+
+PODFILE CHECKSUM: 3c63482e143d1b91d2d2560aee9fb04ecc74ac7e
+
+COCOAPODS: 1.16.2

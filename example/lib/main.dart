@@ -28,7 +28,10 @@ class HighlightedText extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final syntaxHighlighter = SyntaxHighlighterPlus(theme: 'github-dark');
-    final highlightFuture = syntaxHighlighter.highlight('dart', _dartSample);
+    final highlightFuture = syntaxHighlighter.highlight(
+      'python',
+      _pythonSample,
+    );
 
     return FutureBuilder<TextSpan>(
       future: highlightFuture,
@@ -38,7 +41,7 @@ class HighlightedText extends StatelessWidget {
         }
 
         // Get the highlighted text span, falling back to non-highlighted text if not available.
-        final span = snapshot.data ?? const TextSpan(text: _dartSample);
+        final span = snapshot.data ?? const TextSpan(text: _pythonSample);
 
         // Display the highlighted text in a scrollable view.
         return SingleChildScrollView(
@@ -56,28 +59,44 @@ class HighlightedText extends StatelessWidget {
   }
 }
 
-const _dartSample = r'''
-void main() {
-  final numbers = [1, 2, 3, 4, 5];
-  final doubled = numbers.map((n) => n * 2).toList();
-  print(doubled); // [2, 4, 6, 8, 10]
-}
+const _pythonSample = r'''
+import json
+from dataclasses import dataclass
+from typing import List, Optional
 
-/// Returns the nth Fibonacci number.
-int fibonacci(int n) {
-  if (n <= 1) return n;
-  return fibonacci(n - 1) + fibonacci(n - 2);
-}
+@dataclass
+class User:
+    id: int
+    username: str
+    email: str
+    is_active: bool = True
 
-class Counter {
-  int _count = 0;
+class UserManager:
+    """Manages user data and operations."""
+    
+    def __init__(self):
+        self._users: List[User] = []
+        
+    def add_user(self, username: str, email: str) -> User:
+        user_id = len(self._users) + 1
+        user = User(id=user_id, username=username, email=email)
+        self._users.append(user)
+        return user
+        
+    def get_user(self, user_id: int) -> Optional[User]:
+        for user in self._users:
+            if user.id == user_id:
+                return user
+        return None
+        
+    def export_data(self) -> str:
+        return json.dumps([user.__dict__ for user in self._users], indent=4)
 
-  void increment() => _count++;
-  void reset() => _count = 0;
-
-  int get value => _count;
-
-  @override
-  String toString() => 'Counter($_count)';
-}
+if __name__ == '__main__':
+    manager = UserManager()
+    manager.add_user("alice", "alice@example.com")
+    manager.add_user("bob", "bob@example.com")
+    
+    print("Exported User Data:")
+    print(manager.export_data())
 ''';

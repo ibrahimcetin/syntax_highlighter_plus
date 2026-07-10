@@ -1,161 +1,278 @@
-// Copyright 2021 The Flutter Authors
-// Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file or at https://developers.google.com/open-source/licenses/bsd.
-
-// This file is taken from DevTools and should be kept in-sync with any changes
-//
-// https://github.com/flutter/devtools/blob/master/packages/devtools_app/lib/src/screens/debugger/syntax_highlighter.dart
-
-import 'dart:collection';
-
 import 'package:flutter/widgets.dart';
 
-import 'span_parser.dart';
+import 'onig_reg_exp.dart';
 import 'syntax_theme.dart';
-import 'utils.dart';
+
+class _Capture {
+  final int start;
+  final int end;
+  final TextStyle style;
+  _Capture(this.start, this.end, this.style);
+}
+
+class _RuleContext {
+  final Map<String, dynamic> rule;
+  final String? nameScope;
+  final String? contentScope;
+  final OnigRegExp? endRegex;
+  final Map<String, dynamic>? endCaptures;
+  final Map<String, dynamic>? captures;
+
+  _RuleContext({
+    required this.rule,
+    this.nameScope,
+    this.contentScope,
+    this.endRegex,
+    this.endCaptures,
+    this.captures,
+  });
+}
+
+class _MatchResult {
+  final OnigMatch match;
+  final Map<String, dynamic> rule;
+  final bool isEnd;
+  _MatchResult(this.match, this.rule, this.isEnd);
+}
 
 class SyntaxHighlighter {
   SyntaxHighlighter({required this.grammar, required this.source});
 
-  final Grammar grammar;
-
+  final Map<String, dynamic> grammar;
   final String source;
-  late String _processedSource;
 
-  final _spanStack = ListQueue<ScopeSpan>();
+  static final Map<String, OnigRegExp> _regexCache = {};
 
-  int _currentPosition = 0;
-
-  SyntaxTheme? _syntaxTheme;
-
-  /// Returns the highlighted [source] in [TextSpan] form.
-  ///
-  /// Pass a [theme] to apply colors from a [SyntaxTheme]. When [theme] is
-  /// `null` all spans are unstyled (plain text).
-  ///
-  /// If [lineRange] is provided, only the lines between
-  /// `[lineRange.begin, lineRange.end]` will be returned.
-  TextSpan highlight({SyntaxTheme? theme, LineRange? lineRange}) {
-    _syntaxTheme = theme;
-    _currentPosition = 0;
-    _processedSource = source;
-    if (lineRange != null) {
-      _processedSource = _processedSource
-          .split('\n') //
-          .sublist(lineRange.begin - 1, lineRange.end)
-          .join('\n');
-    }
-    return TextSpan(
-      children: _highlightLoopHelper(
-        currentScope: null,
-        loopCondition: () => _currentPosition < _processedSource.length,
-        scopes: SpanParser.parse(grammar, _processedSource),
-      ),
-    );
+  static OnigRegExp _getRegex(String pattern) {
+    return _regexCache.putIfAbsent(pattern, () => OnigRegExp(pattern));
   }
 
-  /// Returns the [TextStyle] for the current span based on the current scopes.
-  ///
-  /// If there are multiple scopes for a span, styling for each scope is
-  /// applied in the order the scopes are listed (i.e., later scope styles take
-  /// precedence).
-  TextStyle _getStyleForSpan() {
-    if (_spanStack.isEmpty) return const TextStyle();
-    final scopes = _spanStack.last.scopes;
-    if (scopes.isEmpty) return const TextStyle();
+  /// Highlights [source] and returns the result as a [TextSpan].
+  TextSpan highlight({SyntaxTheme? theme}) {
+    final spans = <TextSpan>[];
+    int currentPos = 0;
 
+    final stack = <_RuleContext>[
+      _RuleContext(
+        rule: grammar,
+        contentScope: grammar['scopeName'] as String?,
+      )
+    ];
+
+    while (currentPos < source.length) {
+      final top = stack.last;
+      final patterns = top.rule['patterns'] as List<dynamic>? ?? [];
+
+      final result = _findNextMatch(patterns, top.endRegex, currentPos, source);
+
+      if (result != null) {
+        final m = result.match;
+
+        if (m.start > currentPos) {
+          spans.addAll(_processText(source.substring(currentPos, m.start), _getCurrentStyle(stack, theme)));
+        }
+
+        if (result.isEnd) {
+          final eCaptures = top.endCaptures ?? top.captures;
+          if (eCaptures != null) {
+            spans.addAll(_processCaptures(m, eCaptures, _getCurrentStyle(stack, theme), theme));
+          } else {
+            spans.addAll(_processText(source.substring(m.start, m.end), _getCurrentStyle(stack, theme)));
+          }
+
+          stack.removeLast();
+          currentPos = m.end;
+        } else {
+          final rule = result.rule;
+          final scopeName = rule['name'] as String?;
+          final style = _getCurrentStyle(stack, theme).merge(theme?.resolveStyle(scopeName ?? '') ?? const TextStyle());
+
+          if (rule.containsKey('match')) {
+            final captures = rule['captures'] as Map<String, dynamic>?;
+            if (captures != null) {
+              spans.addAll(_processCaptures(m, captures, style, theme));
+            } else {
+              spans.addAll(_processText(source.substring(m.start, m.end), style));
+            }
+            currentPos = m.end;
+            if (currentPos == m.start) {
+              if (currentPos < source.length) {
+                spans.addAll(_processText(source.substring(currentPos, currentPos + 1), _getCurrentStyle(stack, theme)));
+                currentPos++;
+              } else {
+                break;
+              }
+            }
+          } else if (rule.containsKey('begin')) {
+            final bCaptures = rule['beginCaptures'] as Map<String, dynamic>? ?? rule['captures'] as Map<String, dynamic>?;
+            if (bCaptures != null) {
+              spans.addAll(_processCaptures(m, bCaptures, style, theme));
+            } else {
+              spans.addAll(_processText(source.substring(m.start, m.end), style));
+            }
+
+            String? endRaw = rule['end'] as String?;
+            endRaw ??= rule['while'] as String?;
+
+            OnigRegExp? endRegex;
+            if (endRaw != null) {
+              endRaw = endRaw.replaceAllMapped(RegExp(r'(?<!\\)\\(\d+)'), (bm) {
+                final idx = int.parse(bm.group(1)!);
+                if (idx <= m.groupCount) {
+                  final gStart = m.groupStart(idx);
+                  final gEnd = m.groupEnd(idx);
+                  if (gStart >= 0 && gEnd >= 0) {
+                    return source.substring(gStart, gEnd);
+                  }
+                }
+                return bm.group(0)!;
+              });
+              endRegex = _getRegex(endRaw);
+            }
+
+            stack.add(_RuleContext(
+              rule: rule,
+              nameScope: scopeName,
+              contentScope: rule['contentName'] as String?,
+              endRegex: endRegex,
+              endCaptures: rule['endCaptures'] as Map<String, dynamic>?,
+              captures: rule['captures'] as Map<String, dynamic>?,
+            ));
+
+            currentPos = m.end;
+          }
+        }
+      } else {
+        spans.addAll(_processText(source.substring(currentPos), _getCurrentStyle(stack, theme)));
+        break;
+      }
+    }
+
+    return TextSpan(children: spans);
+  }
+
+  Map<String, dynamic>? _resolveRule(Map<String, dynamic> rule) {
+    if (rule.containsKey('include')) {
+      final include = rule['include'] as String;
+      if (include.startsWith('#')) {
+        final repo = grammar['repository'] as Map<String, dynamic>?;
+        if (repo != null) {
+          final target = repo[include.substring(1)];
+          if (target is Map) return target as Map<String, dynamic>;
+        }
+      } else if (include == r'$self' || include == r'$base') {
+        return grammar;
+      }
+      return null;
+    }
+    return rule;
+  }
+
+  _MatchResult? _findNextMatch(List<dynamic> patterns, OnigRegExp? endRegex, int startPos, String text) {
+    _MatchResult? bestMatch;
+
+    if (endRegex != null) {
+      final match = endRegex.search(text, startPos);
+      if (match != null) {
+        bestMatch = _MatchResult(match, {}, true);
+      }
+    }
+
+    for (final p in patterns) {
+      if (p is! Map) continue;
+      final rule = _resolveRule(p as Map<String, dynamic>);
+      if (rule == null) continue;
+
+      if (rule.containsKey('match')) {
+        final r = _getRegex(rule['match'] as String);
+        final match = r.search(text, startPos);
+        if (match != null) {
+          if (bestMatch == null || match.start < bestMatch.match.start) {
+            bestMatch = _MatchResult(match, rule, false);
+          }
+        }
+      } else if (rule.containsKey('begin')) {
+        final r = _getRegex(rule['begin'] as String);
+        final match = r.search(text, startPos);
+        if (match != null) {
+          if (bestMatch == null || match.start < bestMatch.match.start) {
+            bestMatch = _MatchResult(match, rule, false);
+          }
+        }
+      } else if (rule.containsKey('patterns')) {
+        final innerMatch = _findNextMatch(rule['patterns'] as List<dynamic>, null, startPos, text);
+        if (innerMatch != null) {
+          if (bestMatch == null || innerMatch.match.start < bestMatch.match.start) {
+            bestMatch = innerMatch;
+          }
+        }
+      }
+    }
+    return bestMatch;
+  }
+
+  TextStyle _getCurrentStyle(List<_RuleContext> stack, SyntaxTheme? theme) {
     var style = const TextStyle();
-    for (final scope in scopes) {
-      style = style.merge(_resolveScope(scope));
+    if (theme == null) return style;
+    for (final ctx in stack) {
+      if (ctx.nameScope != null) style = style.merge(theme.resolveStyle(ctx.nameScope!));
+      if (ctx.contentScope != null) style = style.merge(theme.resolveStyle(ctx.contentScope!));
     }
     return style;
   }
 
-  /// Resolves a single TextMate [scope] to a [TextStyle] using the active
-  /// [SyntaxTheme]. Returns an empty [TextStyle] when no theme is set or no
-  /// rule matches the scope.
-  TextStyle _resolveScope(String scope) {
-    return _syntaxTheme?.resolveStyle(scope) ?? const TextStyle();
-  }
-
-  /// Enters a new scope for a span of text. Returns a [List<TextSpan>]
-  /// containing the stylized text from within the scope.
-  List<TextSpan> _scope(ScopeSpan currentScope, List<ScopeSpan> scopes) {
-    return _highlightLoopHelper(
-      currentScope: currentScope,
-      loopCondition: () => currentScope.contains(_currentPosition),
-      scopes: scopes,
-    );
-  }
-
-  List<TextSpan> _highlightLoopHelper({
-    required ScopeSpan? currentScope,
-    required bool Function() loopCondition,
-    required List<ScopeSpan> scopes,
-  }) {
-    final sourceSpans = <TextSpan>[];
-    int? currentScopeBegin = _currentPosition;
-    if (currentScope != null) {
-      _spanStack.addLast(currentScope);
-    }
-    while (loopCondition()) {
-      if (scopes.isNotEmpty && scopes.first.contains(_currentPosition)) {
-        // Encountered the next scoped span. Close the current span and enter
-        // the next.
-        final text = _processedSource.substring(
-          currentScopeBegin!,
-          _currentPosition,
-        );
-        if (text.isNotEmpty) {
-          sourceSpans.add(TextSpan(style: _getStyleForSpan(), text: text));
+  List<TextSpan> _processCaptures(OnigMatch m, Map<String, dynamic> captures, TextStyle baseStyle, SyntaxTheme? theme) {
+    final caps = <_Capture>[];
+    for (int i = 0; i <= m.groupCount; i++) {
+      if (captures.containsKey(i.toString())) {
+        final c = captures[i.toString()];
+        if (c is Map) {
+          final name = c['name'] as String?;
+          final start = m.groupStart(i);
+          final end = m.groupEnd(i);
+          if (name != null && start >= 0 && end >= 0 && start != end) {
+            caps.add(_Capture(start, end, theme?.resolveStyle(name) ?? const TextStyle()));
+          }
         }
-        sourceSpans.addAll(_scope(scopes.removeAt(0), scopes));
-        // Reset the beginning of the current span to the first position after
-        // the close of the span that was just processed.
-        currentScopeBegin = _currentPosition;
-      } else if (_atNewline()) {
-        currentScopeBegin = _processNewlines(sourceSpans, currentScopeBegin!);
-      } else {
-        ++_currentPosition;
       }
     }
-    // Reached the end of the text covered by the current span. Close the span
-    // and exit the scope.
-    final text = _processedSource.substring(
-      currentScopeBegin!,
-      _currentPosition,
-    );
-    if (text.isNotEmpty) {
-      sourceSpans.add(TextSpan(style: _getStyleForSpan(), text: text));
+
+    if (caps.isEmpty) {
+      return _processText(source.substring(m.start, m.end), baseStyle);
     }
-    if (currentScope != null) {
-      _spanStack.removeLast();
+
+    caps.sort((a, b) {
+      if (a.start != b.start) return a.start.compareTo(b.start);
+      return b.end.compareTo(a.end);
+    });
+
+    final spans = <TextSpan>[];
+    int charPos = m.start;
+    while (charPos < m.end) {
+      var style = baseStyle;
+      int nextChange = m.end;
+
+      for (final c in caps) {
+        if (charPos >= c.start && charPos < c.end) {
+          style = style.merge(c.style);
+        }
+        if (c.start > charPos && c.start < nextChange) {
+          nextChange = c.start;
+        }
+        if (c.end > charPos && c.end < nextChange) {
+          nextChange = c.end;
+        }
+      }
+
+      spans.addAll(_processText(source.substring(charPos, nextChange), style));
+      charPos = nextChange;
     }
-    return sourceSpans;
+
+    return spans;
   }
 
-  bool _atNewline() => String.fromCharCode(_processedSource.codeUnitAt(_currentPosition)) == '\n';
-
-  int? _processNewlines(List<TextSpan> sourceSpans, int currentScopeBegin) {
-    final text = _processedSource.substring(
-      currentScopeBegin,
-      _currentPosition,
-    );
-    if (text.isNotEmpty) {
-      sourceSpans.add(
-        TextSpan(
-          style: _getStyleForSpan(),
-          text: _processedSource.substring(currentScopeBegin, _currentPosition),
-        ),
-      );
-    }
-    // We artificially break up spans if they contain a newline so it's easier
-    // to find line boundaries when we try and populate the code view.
-    do {
-      sourceSpans.add(const TextSpan(text: '\n'));
-      ++_currentPosition;
-    } while ((_currentPosition < _processedSource.length) &&
-        (String.fromCharCode(_processedSource.codeUnitAt(_currentPosition)) == '\n'));
-    return _currentPosition;
+  List<TextSpan> _processText(String text, TextStyle style) {
+    if (text.isEmpty) return const [];
+    return [TextSpan(text: text, style: style)];
   }
 }

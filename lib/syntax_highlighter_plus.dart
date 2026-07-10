@@ -3,9 +3,6 @@ import 'package:flutter/widgets.dart';
 import 'src/grammar_registry.dart';
 import 'src/syntax_highlighter.dart';
 import 'src/theme_registry.dart';
-import 'src/utils.dart';
-
-export 'src/utils.dart' show LineRange;
 
 /// High-level syntax-highlighting helper.
 ///
@@ -44,13 +41,12 @@ class SyntaxHighlighterPlus {
   /// Colors are driven by the [theme] passed to the constructor.
   Future<TextSpan> highlight(
     String language,
-    String source, {
-    LineRange? lineRange,
-  }) async {
+    String source,
+  ) async {
     final syntaxTheme = await ThemeRegistry.themeFor(theme);
     final grammar = await GrammarRegistry.grammarFor(language);
 
     final syntaxHighlighter = SyntaxHighlighter(grammar: grammar, source: source);
-    return syntaxHighlighter.highlight(theme: syntaxTheme, lineRange: lineRange);
+    return syntaxHighlighter.highlight(theme: syntaxTheme);
   }
 }

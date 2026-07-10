@@ -173,10 +173,12 @@ class SyntaxTheme {
       final r = int.tryParse(h[0] * 2, radix: 16);
       final g = int.tryParse(h[1] * 2, radix: 16);
       final b = int.tryParse(h[2] * 2, radix: 16);
-      if (r == null || g == null || b == null) return null;
+      if (r == null || g == null || b == null) {
+        return null;
+      }
       return Color.fromARGB(255, r, g, b);
     }
-    if (h.length == 6) {
+    if (h.length == 6 || h.length == 8) {
       final v = int.tryParse(h, radix: 16);
       if (v == null) return null;
       return Color(0xFF000000 | v);
@@ -283,8 +285,9 @@ class TokenColorRule {
       if (parts.contains('bold')) fontWeight = FontWeight.bold;
 
       final decorations = <TextDecoration>[];
-      if (parts.contains('underline')) //
+      if (parts.contains('underline')) {
         decorations.add(TextDecoration.underline);
+      }
       if (parts.contains('strikethrough')) {
         decorations.add(TextDecoration.lineThrough);
       }
