@@ -1,7 +1,4 @@
-import 'dart:convert';
-
 import 'package:flutter/widgets.dart';
-import 'package:flutter/services.dart';
 
 // ---------------------------------------------------------------------------
 // Public API
@@ -52,33 +49,6 @@ class SyntaxTheme {
   final List<TokenColorRule> tokenRules;
 
   bool get isDark => type == 'dark';
-
-  // -------------------------------------------------------------------------
-  // Asset loading + cache
-  // -------------------------------------------------------------------------
-
-  static final Map<String, SyntaxTheme> _cache = {};
-
-  /// Loads and parses a bundled theme asset by [themeName]
-  /// (e.g. `'github-dark'` or `'github-light'`).
-  ///
-  /// Results are cached after the first load so subsequent calls are instant.
-  ///
-  /// Throws an [ArgumentError] if [themeName] does not match any bundled theme.
-  static Future<SyntaxTheme> load(String themeName) async {
-    final key = themeName.toLowerCase().trim();
-    if (_cache.containsKey(key)) return _cache[key]!;
-
-    final jsonString = await rootBundle.loadString(
-      'packages/syntax_highlighter_plus/assets/themes/$key.json',
-    );
-    final theme = SyntaxTheme.fromJson(
-      key,
-      jsonDecode(jsonString) as Map<String, Object?>,
-    );
-    _cache[key] = theme;
-    return theme;
-  }
 
   // -------------------------------------------------------------------------
   // Parsing
