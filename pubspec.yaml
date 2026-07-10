@@ -1,7 +1,7 @@
 name: syntax_highlighter_plus
-description: "A new Flutter package project."
+description: "A robust syntax highlighting Flutter package powered by TextMate grammars."
+repository: https://github.com/ibrahimcetin/syntax_highlighter_plus
 version: 0.0.1
-homepage:
 
 environment:
   sdk: ^3.12.2
