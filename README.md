@@ -1,39 +1,47 @@
-<!--
-This README describes the package. If you publish this package to pub.dev,
-this README's contents appear on the landing page for your package.
+# syntax_highlighter_plus
 
-For information about how to write a good package README, see the guide for
-[writing package pages](https://dart.dev/tools/pub/writing-package-pages).
-
-For general information about developing packages, see the Dart guide for
-[creating packages](https://dart.dev/guides/libraries/create-packages)
-and the Flutter guide for
-[developing packages and plugins](https://flutter.dev/to/develop-packages).
--->
-
-TODO: Put a short description of the package here that helps potential users
-know whether this package might be useful for them.
+A robust syntax highlighting Flutter package powered by TextMate grammars and themes.
 
 ## Features
 
-TODO: List what your package can do. Maybe include images, gifs, or videos.
-
-## Getting started
-
-TODO: List prerequisites and provide or point to information on how to
-start using the package.
+- Uses standard TextMate grammars (`.json`) for accurate syntax highlighting.
+- Supports TextMate themes for customizable styling.
+- Easy to integrate with your Flutter applications.
 
 ## Usage
 
-TODO: Include short and useful examples for package users. Add longer examples
-to `/example` folder.
+Here is a basic example of how to use the `SyntaxHighlighterPlus` class to highlight Dart code:
 
 ```dart
-const like = 'sample';
+import 'package:flutter/material.dart';
+import 'package:syntax_highlighter_plus/syntax_highlighter_plus.dart';
+
+class HighlightedText extends StatelessWidget {
+  const HighlightedText({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final syntaxHighlighter = SyntaxHighlighterPlus(theme: 'github-dark');
+    final highlightFuture = syntaxHighlighter.highlight('dart', 'print("Hello, World!");');
+
+    return FutureBuilder<TextSpan>(
+      future: highlightFuture,
+      builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          return Center(child: Text('Error: ${snapshot.error}'));
+        }
+        
+        final span = snapshot.data ?? const TextSpan(text: 'print("Hello, World!");');
+
+        return SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: SelectableText.rich(
+            span,
+            style: const TextStyle(fontFamily: 'monospace', height: 1.6),
+          ),
+        );
+      },
+    );
+  }
+}
 ```
-
-## Additional information
-
-TODO: Tell users more about the package: where to find more information, how to
-contribute to the package, how to file issues, what response they can expect
-from the package authors, and more.
