@@ -1,4 +1,5 @@
 import 'dart:convert';
+
 import 'package:flutter/services.dart';
 
 /// Maps markdown fence tags to canonical TextMate grammar ids.

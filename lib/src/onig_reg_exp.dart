@@ -1,6 +1,8 @@
 import 'dart:ffi' as ffi;
 import 'dart:io';
+
 import 'package:ffi/ffi.dart';
+
 import 'oniguruma_bindings_generated.dart';
 
 class _StringCache {

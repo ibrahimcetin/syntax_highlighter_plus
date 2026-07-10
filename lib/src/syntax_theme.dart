@@ -6,11 +6,9 @@ import 'package:flutter/widgets.dart';
 
 /// A parsed TextMate / VS Code color theme.
 ///
-/// Use [SyntaxTheme.load] to load one of the bundled themes by name, or
-/// [SyntaxTheme.fromJson] to parse your own JSON map.
+/// Use [SyntaxTheme.fromJson] to parse your own JSON map.
 ///
-/// Pass a [SyntaxTheme] to [SyntaxHighlighter.highlight] to apply its colors
-/// instead of the default [ColorScheme]-derived palette.
+/// Pass a [SyntaxTheme] to [SyntaxHighlighter.highlight] to apply its colors.
 class SyntaxTheme {
   SyntaxTheme._({
     required this.name,
