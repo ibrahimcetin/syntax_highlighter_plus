@@ -1,7 +1,9 @@
 import 'dart:ui' show Brightness, Color;
 
 import 'package:flutter/painting.dart';
+
 import 'package:flutter_test/flutter_test.dart';
+
 import 'package:syntax_highlighter_plus/syntax_highlighter_plus.dart';
 
 SyntaxTheme _theme() => SyntaxTheme.fromJson('test-theme', {

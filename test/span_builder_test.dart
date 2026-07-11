@@ -1,5 +1,7 @@
 import 'package:flutter/painting.dart';
+
 import 'package:flutter_test/flutter_test.dart';
+
 import 'package:syntax_highlighter_plus/src/span_builder.dart';
 import 'package:syntax_highlighter_plus/syntax_highlighter_plus.dart';
 
