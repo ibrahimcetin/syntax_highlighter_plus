@@ -26,8 +26,7 @@ export 'src/syntax_theme.dart' show SyntaxTheme;
 class SyntaxHighlighterPlus {
   /// Every language tag accepted by [highlight] — canonical grammar ids plus
   /// fence-tag aliases like `py` and `js`.
-  static List<String> get supportedLanguages =>
-      GrammarRegistry.supportedLanguages;
+  static List<String> get supportedLanguages => GrammarRegistry.supportedLanguages;
 
   /// The list of bundled theme ids.
   static List<String> get supportedThemes => ThemeRegistry.supportedThemes;

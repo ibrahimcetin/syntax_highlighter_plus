@@ -24,10 +24,12 @@ TextSpan buildTextSpan({
 
   void flush() {
     if (runEnd > runStart) {
-      children.add(TextSpan(
-        text: source.substring(runStart, runEnd),
-        style: runStyle,
-      ));
+      children.add(
+        TextSpan(
+          text: source.substring(runStart, runEnd),
+          style: runStyle,
+        ),
+      );
     }
     runStart = runEnd;
   }
