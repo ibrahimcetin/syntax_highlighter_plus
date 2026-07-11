@@ -1,7 +1,7 @@
 name: syntax_highlighter_plus
 description: "A robust syntax highlighting Flutter package powered by TextMate grammars."
 repository: https://github.com/ibrahimcetin/syntax_highlighter_plus
-version: 0.0.2
+version: 0.1.0
 
 environment:
   sdk: ^3.12.2
@@ -14,8 +14,6 @@ dependencies:
   plugin_platform_interface: ^2.0.2
 
 dev_dependencies:
-  ffi: ^2.1.3
-  ffigen: ^20.1.1
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
@@ -40,8 +38,9 @@ flutter:
         ffiPlugin: true
       windows:
         ffiPlugin: true
+  # Grammars (assets/grammars/) are embedded in the Rust library at build
+  # time, so they are intentionally NOT bundled as Flutter assets.
   assets:
-    - assets/grammars/
     - assets/themes/
 
 import_sorter:

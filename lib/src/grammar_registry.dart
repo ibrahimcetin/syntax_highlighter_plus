@@ -1,7 +1,3 @@
-import 'dart:convert';
-
-import 'package:flutter/services.dart';
-
 /// Maps markdown fence tags to canonical TextMate grammar ids.
 ///
 /// Internally it maintains two structures:
@@ -161,33 +157,5 @@ class GrammarRegistry {
         'No grammar registered for "$normalized"',
       );
     }
-  }
-
-  // -------------------------------------------------------------------------
-  // Grammar Loader
-  // -------------------------------------------------------------------------
-
-  static final Map<String, Map<String, dynamic>> _grammarCache = {};
-
-  /// Returns the grammar JSON for [language], loading and parsing it from the
-  /// bundled asset the first time it is requested.
-  ///
-  /// Throws an [ArgumentError] if [language] does not match any bundled grammar.
-  static Future<Map<String, dynamic>> grammarFor(String language) async {
-    final canonicalId = resolve(language);
-
-    // Return from cache if already loaded.
-    if (_grammarCache.containsKey(canonicalId)) {
-      return _grammarCache[canonicalId]!;
-    }
-
-    final jsonString = await rootBundle.loadString(
-      'packages/syntax_highlighter_plus/assets/grammars/$canonicalId.json',
-    );
-
-    final grammar = jsonDecode(jsonString) as Map<String, dynamic>;
-
-    _grammarCache[canonicalId] = grammar;
-    return grammar;
   }
 }

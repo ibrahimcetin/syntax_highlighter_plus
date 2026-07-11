@@ -1,56 +1,88 @@
 import 'package:flutter/widgets.dart';
 
 import 'src/grammar_registry.dart';
-import 'src/syntax_highlighter.dart';
+import 'src/rust/api/highlighter.dart' as rust;
+import 'src/rust/frb_generated.dart';
+import 'src/span_builder.dart';
+import 'src/syntax_theme.dart';
 import 'src/theme_registry.dart';
+
+export 'src/rust/api/highlighter.dart' show Token;
+export 'src/syntax_theme.dart' show SyntaxTheme;
 
 /// High-level syntax-highlighting helper.
 ///
-/// Create one instance per desired theme and reuse it; grammars and themes
-/// are both cached statically so repeated calls are cheap.
+/// Tokenization runs in Rust (Oniguruma + TextMate grammars) on a worker
+/// thread; theming and span building happen in Dart. Grammars, compiled
+/// rules, themes, and scope-style lookups are all cached, so repeated calls
+/// are cheap.
 ///
 /// ```dart
 /// final highlighter = SyntaxHighlighterPlus(theme: 'github-dark');
-/// final span = await highlighter.highlight('dart', _source);
+/// final span = await highlighter.highlight('dart', source);
+/// // ...
+/// Text.rich(span);
 /// ```
 class SyntaxHighlighterPlus {
-  /// Returns the list of supported languages.
+  /// Every language tag accepted by [highlight] — canonical grammar ids plus
+  /// fence-tag aliases like `py` and `js`.
   static List<String> get supportedLanguages =>
       GrammarRegistry.supportedLanguages;
 
-  /// Returns the list of supported themes.
+  /// The list of bundled theme ids.
   static List<String> get supportedThemes => ThemeRegistry.supportedThemes;
 
-  /// The theme to use for highlighting (e.g. `'github-dark'`).
+  /// The theme to apply (e.g. `'github-dark'`). Must be one of
+  /// [supportedThemes].
   final String theme;
 
-  /// Creates a highlighter that applies [theme] when rendering.
-  ///
-  /// [theme] must be a supported theme id (e.g. `'github-dark'`). Check
-  /// [SyntaxHighlighterPlus.supportedThemes].
+  /// Creates a highlighter that renders with [theme].
   const SyntaxHighlighterPlus({required this.theme});
 
-  // -------------------------------------------------------------------------
-  // Highlighting
-  // -------------------------------------------------------------------------
-
-  /// Highlights [source] and returns the result as a [TextSpan].
+  /// Highlights [source] and returns a [TextSpan] for use with `Text.rich`.
   ///
-  /// * [language] — language id (e.g. `'dart'`). Must be a supported grammar id or alias. Check [SyntaxHighlighterPlus.supportedLanguages].
-  /// * [lineRange] — optional subset of lines to highlight.
+  /// * [language] — language id or alias (e.g. `'dart'`, `'py'`, `'c++'`).
+  ///   Throws an [ArgumentError] for unknown tags; check
+  ///   [supportedLanguages] or catch the error to fall back to plain text.
+  /// * [style] — optional base style (font family, size, …) merged into the
+  ///   root span; the theme controls colors on top of it.
   ///
-  /// Colors are driven by the [theme] passed to the constructor.
+  /// The returned span paints no background. Wrap the `Text.rich` in a
+  /// container colored with the theme's background if desired (see
+  /// [SyntaxTheme.background], available via [themeData]).
   Future<TextSpan> highlight(
     String language,
-    String source,
-  ) async {
+    String source, {
+    TextStyle? style,
+  }) async {
+    final canonicalId = GrammarRegistry.resolve(language);
     final syntaxTheme = await ThemeRegistry.themeFor(theme);
-    final grammar = await GrammarRegistry.grammarFor(language);
 
-    final syntaxHighlighter = SyntaxHighlighter(
-      grammar: grammar,
+    await _ensureInit();
+    final tokens = await rust.tokenize(language: canonicalId, source: source);
+
+    return buildTextSpan(
       source: source,
+      tokens: tokens,
+      theme: syntaxTheme,
+      baseStyle: style,
     );
-    return syntaxHighlighter.highlight(theme: syntaxTheme);
+  }
+
+  /// The parsed theme, exposing [SyntaxTheme.background],
+  /// [SyntaxTheme.foreground], and [SyntaxTheme.brightness] for styling the
+  /// surrounding widget.
+  Future<SyntaxTheme> get themeData => ThemeRegistry.themeFor(theme);
+
+  static Future<void>? _init;
+
+  static Future<void> _ensureInit() => _init ??= _doInit();
+
+  static Future<void> _doInit() async {
+    try {
+      await RustLib.init();
+    } on StateError {
+      // The host app already initialized flutter_rust_bridge itself.
+    }
   }
 }

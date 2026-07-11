@@ -4,9 +4,13 @@ A robust syntax highlighting Flutter package powered by TextMate grammars and th
 
 ## Features
 
-- Uses standard TextMate grammars (`.json`) for accurate syntax highlighting.
-- Supports TextMate themes for customizable styling.
-- Easy to integrate with your Flutter applications.
+- Full TextMate grammar support (begin/end/while rules, captures, embedded
+  languages), tokenized by a Rust engine built on Oniguruma — the same regex
+  engine VS Code's highlighter uses.
+- 70+ bundled grammars and fence-tag aliases (`py`, `js`, `c++`, …).
+- VS Code color themes (`github-dark`, `github-light` bundled).
+- Tokenization runs off the UI thread via `flutter_rust_bridge`; theming and
+  `TextSpan` building happen in Dart, so switching themes is cheap.
 
 ## Usage
 
@@ -30,7 +34,7 @@ class HighlightedText extends StatelessWidget {
         if (snapshot.hasError) {
           return Center(child: Text('Error: ${snapshot.error}'));
         }
-        
+
         final span = snapshot.data ?? const TextSpan(text: 'print("Hello, World!");');
 
         return SingleChildScrollView(
@@ -45,3 +49,28 @@ class HighlightedText extends StatelessWidget {
   }
 }
 ```
+
+`highlight` accepts any supported language id or alias
+(`SyntaxHighlighterPlus.supportedLanguages`) and throws an `ArgumentError`
+for unknown tags — catch it to fall back to plain text for unrecognized
+markdown fence tags.
+
+To style the surrounding widget (e.g. the code block's background), use the
+parsed theme:
+
+```dart
+final theme = await syntaxHighlighter.themeData;
+// theme.background, theme.foreground, theme.brightness
+```
+
+## Architecture
+
+- `assets/grammars/*.json` (TextMate grammars) are embedded into the native
+  library at build time and interpreted by a Rust tokenizer
+  (`rust/src/textmate/`) using the [onig](https://crates.io/crates/onig)
+  crate. Grammars and compiled regexes are cached lazily per process.
+- Tokens come back as `(start, end, scopes)` with UTF-16 offsets, ready to
+  index Dart strings.
+- `assets/themes/*.json` (VS Code themes) are parsed in Dart; scope-selector
+  matching maps each token's scope stack to a `TextStyle`, and adjacent runs
+  merge into a compact `TextSpan` tree.
