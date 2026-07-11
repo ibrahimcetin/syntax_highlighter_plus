@@ -155,7 +155,11 @@ class GrammarRegistry {
     if (alias != null) {
       return alias;
     } else {
-      throw ArgumentError.value(tag, 'tag', 'No grammar registered for "$normalized"');
+      throw ArgumentError.value(
+        tag,
+        'tag',
+        'No grammar registered for "$normalized"',
+      );
     }
   }
 

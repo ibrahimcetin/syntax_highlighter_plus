@@ -15,7 +15,8 @@ import 'src/theme_registry.dart';
 /// ```
 class SyntaxHighlighterPlus {
   /// Returns the list of supported languages.
-  static List<String> get supportedLanguages => GrammarRegistry.supportedLanguages;
+  static List<String> get supportedLanguages =>
+      GrammarRegistry.supportedLanguages;
 
   /// Returns the list of supported themes.
   static List<String> get supportedThemes => ThemeRegistry.supportedThemes;
@@ -46,7 +47,10 @@ class SyntaxHighlighterPlus {
     final syntaxTheme = await ThemeRegistry.themeFor(theme);
     final grammar = await GrammarRegistry.grammarFor(language);
 
-    final syntaxHighlighter = SyntaxHighlighter(grammar: grammar, source: source);
+    final syntaxHighlighter = SyntaxHighlighter(
+      grammar: grammar,
+      source: source,
+    );
     return syntaxHighlighter.highlight(theme: syntaxTheme);
   }
 }
