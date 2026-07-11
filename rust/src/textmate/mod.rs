@@ -126,8 +126,10 @@ mod tests {
 mod parse_debug {
     #[test]
     fn all_grammars_parse() {
-        for (id, _, json) in crate::textmate::grammar::RAW_GRAMMARS {
-            if let Err(e) = serde_json::from_str::<super::raw::RawGrammar>(json) {
+        for (id, _, compressed) in crate::textmate::grammar::RAW_GRAMMARS {
+            let json = crate::textmate::grammar::decompress_grammar(compressed)
+                .unwrap_or_else(|e| panic!("{id}: {e}"));
+            if let Err(e) = serde_json::from_slice::<super::raw::RawGrammar>(&json) {
                 panic!("{id}: {e}");
             }
         }

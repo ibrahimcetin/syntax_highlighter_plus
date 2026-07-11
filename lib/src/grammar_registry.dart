@@ -2,7 +2,8 @@
 ///
 /// Internally it maintains two structures:
 ///  - A set of canonical grammar ids that correspond 1:1 to a bundled
-///    `<id>.json` TextMate grammar file (e.g. `assets/grammars/python.json`).
+///    `<id>.json.zst` TextMate grammar file (e.g.
+///    `assets/grammars/python.json.zst`).
 ///  - A map of fence-tag aliases (e.g. `py`, `js`, `sh`) to their canonical id.
 ///
 /// Use [resolve] to turn any fence tag into the grammar id expected by the
@@ -11,7 +12,7 @@ class GrammarRegistry {
   const GrammarRegistry._();
 
   /// Canonical grammar ids. Each one must have a matching
-  /// `assets/grammars/<id>.json` file bundled with the app.
+  /// `assets/grammars/<id>.json.zst` file bundled with the app.
   static const Set<String> _languages = {
     // Web
     'javascript', 'typescript', 'jsx', 'tsx', 'vue', 'svelte', 'wasm',

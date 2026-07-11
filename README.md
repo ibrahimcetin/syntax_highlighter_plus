@@ -65,10 +65,12 @@ final theme = await syntaxHighlighter.themeData;
 
 ## Architecture
 
-- `assets/grammars/*.json` (TextMate grammars) are embedded into the native
-  library at build time and interpreted by a Rust tokenizer
-  (`rust/src/textmate/`) using the [onig](https://crates.io/crates/onig)
-  crate. Grammars and compiled regexes are cached lazily per process.
+- `assets/grammars/*.json.zst` (zstd-compressed TextMate grammars) are
+  embedded into the native library at build time and interpreted by a Rust
+  tokenizer (`rust/src/textmate/`) using the
+  [onig](https://crates.io/crates/onig) crate. Grammars are decompressed on
+  first use; parsed grammars and compiled regexes are cached lazily per
+  process.
 - Tokens come back as `(start, end, scopes)` with UTF-16 offsets, ready to
   index Dart strings.
 - `assets/themes/*.json` (VS Code themes) are parsed in Dart; scope-selector
