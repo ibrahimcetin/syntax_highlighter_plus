@@ -17,11 +17,11 @@ class SyntaxTheme {
   final Brightness brightness;
 
   /// Default text color (`editor.foreground`).
-  final Color foreground;
+  final Color? foreground;
 
   /// Editor background color (`editor.background`). Apply it to the widget
   /// that contains your `Text.rich` — spans themselves don't paint it.
-  final Color background;
+  final Color? background;
 
   final List<_ThemeRule> _rules;
 
@@ -41,10 +41,8 @@ class SyntaxTheme {
     final colors = (json['colors'] as Map?)?.cast<String, Object?>() ?? const {};
     final isDark = type == 'dark';
 
-    final foreground = _parseColor(colors['editor.foreground'] as String?) ??
-        (isDark ? const Color(0xFFE1E4E8) : const Color(0xFF24292E));
-    final background = _parseColor(colors['editor.background'] as String?) ??
-        (isDark ? const Color(0xFF24292E) : const Color(0xFFFFFFFF));
+    final foreground = _parseColor(colors['editor.foreground'] as String?);
+    final background = _parseColor(colors['editor.background'] as String?);
 
     final rules = <_ThemeRule>[];
     final tokenColors = json['tokenColors'] as List? ?? const [];
@@ -96,12 +94,10 @@ class SyntaxTheme {
       final match = rule.selector.match(scopes);
       if (match == null) continue;
       final candidate = _RuleMatch(rule, match);
-      if (rule.style.foreground != null &&
-          (bestColor == null || candidate.beats(bestColor))) {
+      if (rule.style.foreground != null && (bestColor == null || candidate.beats(bestColor))) {
         bestColor = candidate;
       }
-      if (rule.style.fontStyle != null &&
-          (bestFont == null || candidate.beats(bestFont))) {
+      if (rule.style.fontStyle != null && (bestFont == null || candidate.beats(bestFont))) {
         bestFont = candidate;
       }
     }
@@ -202,9 +198,7 @@ class _Selector {
   /// `string` matches `string` and `string.quoted` but not `stringx`.
   static bool _segmentMatches(String segment, String scope) =>
       scope == segment ||
-      (scope.length > segment.length &&
-          scope.startsWith(segment) &&
-          scope.codeUnitAt(segment.length) == 0x2E /* . */);
+      (scope.length > segment.length && scope.startsWith(segment) && scope.codeUnitAt(segment.length) == 0x2E /* . */ );
 }
 
 class _MatchStrength {
