@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.2.0
+
+* Bundled grammars are now zstd-compressed (`assets/grammars/*.json.zst`),
+  decompressed on first use and cached for the process lifetime. Cuts the
+  native library size roughly 4x with no measured tokenization overhead.
+* Tuned the Rust release profile (LTO, single codegen unit, `opt-level = "s"`,
+  stripped symbols) for a smaller binary at no measured perf cost.
+
 ## 0.1.0
 
 * Replaced the C FFI Oniguruma binding with a Rust TextMate tokenization

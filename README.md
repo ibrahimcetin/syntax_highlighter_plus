@@ -2,6 +2,11 @@
 
 A robust syntax highlighting Flutter package powered by TextMate grammars and themes.
 
+> [!TIP]
+> This is the exact highlighter powering [**Reins: Local & Private AI
+> Assistant**](https://getreins.app) which runs LLMs on your iPhone, iPad, and
+> Mac. Grab Reins on the [App Store](https://apps.apple.com/app/id6739738501) to see it in production.
+
 ## Features
 
 - Full TextMate grammar support (begin/end/while rules, captures, embedded
@@ -11,8 +16,14 @@ A robust syntax highlighting Flutter package powered by TextMate grammars and th
 - VS Code color themes (`github-dark`, `github-light` bundled).
 - Tokenization runs off the UI thread via `flutter_rust_bridge`; theming and
   `TextSpan` building happen in Dart, so switching themes is cheap.
+- Simple and direct: `highlight()` just returns a `TextSpan`. Just drop it into
+  `Text.rich`, no custom widgets or controllers to learn.
 
 ## Usage
+
+`highlight()` just returns a `TextSpan`. There's no special widget to wrap
+your code in, just pass the span straight to `Text.rich` (or
+`SelectableText.rich`) like any other rich text.
 
 Here is a basic example of how to use the `SyntaxHighlighterPlus` class to highlight Dart code:
 
