@@ -57,7 +57,9 @@ void main() {
   test('root style carries theme foreground over base style', () {
     final span = buildTextSpan(
       source: 'x',
-      tokens: [Token(start: 0, end: 1, scopes: const ['source'])],
+      tokens: [
+        Token(start: 0, end: 1, scopes: const ['source']),
+      ],
       theme: _theme,
       baseStyle: const TextStyle(fontFamily: 'monospace'),
     );
@@ -68,7 +70,9 @@ void main() {
   test('out-of-range tokens are clamped', () {
     final span = buildTextSpan(
       source: 'ab',
-      tokens: [Token(start: 0, end: 99, scopes: const ['source', 'keyword'])],
+      tokens: [
+        Token(start: 0, end: 99, scopes: const ['source', 'keyword']),
+      ],
       theme: _theme,
     );
     expect(span.toPlainText(), 'ab');

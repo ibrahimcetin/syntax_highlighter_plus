@@ -7,44 +7,44 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:syntax_highlighter_plus/syntax_highlighter_plus.dart';
 
 SyntaxTheme _theme() => SyntaxTheme.fromJson('test-theme', {
-      'type': 'dark',
-      'colors': {
-        'editor.foreground': '#e1e4e8',
-        'editor.background': '#24292e',
-      },
-      'tokenColors': [
-        {
-          'scope': ['comment', 'punctuation.definition.comment'],
-          'settings': {'foreground': '#6a737d'},
-        },
-        {
-          'scope': 'keyword',
-          'settings': {'foreground': '#f97583'},
-        },
-        {
-          'scope': 'string',
-          'settings': {'foreground': '#9ecbff'},
-        },
-        {
-          // Descendant selector: strings inside meta.embedded stay default.
-          'scope': 'meta.embedded string',
-          'settings': {'foreground': '#ffffff'},
-        },
-        {
-          // More specific prefix must beat the shorter one.
-          'scope': 'keyword.operator',
-          'settings': {'foreground': '#79b8ff'},
-        },
-        {
-          'scope': 'markup.italic',
-          'settings': {'fontStyle': 'italic'},
-        },
-        {
-          'scope': 'markup.bold',
-          'settings': {'fontStyle': 'bold underline'},
-        },
-      ],
-    });
+  'type': 'dark',
+  'colors': {
+    'editor.foreground': '#e1e4e8',
+    'editor.background': '#24292e',
+  },
+  'tokenColors': [
+    {
+      'scope': ['comment', 'punctuation.definition.comment'],
+      'settings': {'foreground': '#6a737d'},
+    },
+    {
+      'scope': 'keyword',
+      'settings': {'foreground': '#f97583'},
+    },
+    {
+      'scope': 'string',
+      'settings': {'foreground': '#9ecbff'},
+    },
+    {
+      // Descendant selector: strings inside meta.embedded stay default.
+      'scope': 'meta.embedded string',
+      'settings': {'foreground': '#ffffff'},
+    },
+    {
+      // More specific prefix must beat the shorter one.
+      'scope': 'keyword.operator',
+      'settings': {'foreground': '#79b8ff'},
+    },
+    {
+      'scope': 'markup.italic',
+      'settings': {'fontStyle': 'italic'},
+    },
+    {
+      'scope': 'markup.bold',
+      'settings': {'fontStyle': 'bold underline'},
+    },
+  ],
+});
 
 void main() {
   group('SyntaxTheme parsing', () {
