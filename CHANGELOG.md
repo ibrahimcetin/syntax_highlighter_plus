@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.3.0
+
+* Migrated the native build backend from Cargokit to Dart/Flutter
+  [native assets](https://cjycode.com/flutter_rust_bridge/manual/integrate/migrate-cargokit-to-native-assets)
+  (`flutter_rust_bridge_hooks` + `hook/build.dart`). No more CocoaPods
+  dependency on iOS/macOS, and the plugin no longer ships per-platform
+  `android/`, `ios/`, `linux/`, `macos/`, `windows/` build glue.
+* Bumped `flutter_rust_bridge` to 2.13.0.
+
 ## 0.2.0
 
 * Bundled grammars are now zstd-compressed (`assets/grammars/*.json.zst`),
