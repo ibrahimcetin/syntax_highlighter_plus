@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.1
+
+* Fixed `flutter build` failing with "Failed to find lib.name in Cargo.toml"
+  by declaring `[lib].name` explicitly in `rust/Cargo.toml` (`native_toolchain_rust`
+  doesn't infer it from `[package].name` the way Cargo does).
+
 ## 0.3.0
 
 * Migrated the native build backend from Cargokit to Dart/Flutter
