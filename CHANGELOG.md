@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.3.2
+
+* Fixed macOS release builds failing to load the native library ("mis-aligned
+  LINKEDIT string pool"). rustc's symbol stripping on Apple targets produced a
+  dylib that newer dyld rejects, so Cargo stripping is now disabled
+  (`strip = false`); Flutter strips release dylibs itself on macOS/iOS.
+
 ## 0.3.1
 
 * Fixed `flutter build` failing with "Failed to find lib.name in Cargo.toml"
