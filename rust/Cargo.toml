@@ -29,7 +29,12 @@ codegen-units = 1
 # execution dominates and Oniguruma's C build, which inherits this level via
 # the cc crate, is unaffected). Re-check perf_smoke before going to "z".
 opt-level = "s"
-strip = "symbols"
+# Must stay explicit (Cargo otherwise defaults to "debuginfo"). On Apple
+# targets rustc strips with rust-objcopy, which leaves the LINKEDIT string
+# table misaligned and newer dyld (macOS 27) refuses to load the dylib.
+# Flutter strips release dylibs itself on macOS/iOS (`xcrun strip -x -S`,
+# after extracting a dSYM).
+strip = false
 
 [lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = ['cfg(frb_expand)'] }
