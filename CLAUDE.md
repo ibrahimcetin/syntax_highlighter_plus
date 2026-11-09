@@ -33,7 +33,7 @@ flutter_rust_bridge_codegen generate                # config: flutter_rust_bridg
 cd example && flutter run -d macos
 ```
 
-FRB is pinned to exactly 2.12.0 in both `pubspec.yaml` and `rust/Cargo.toml`; the codegen CLI version must match. `lib/src/rust/` and `rust/src/frb_generated.rs` are generated — never hand-edit, regenerate instead.
+FRB is pinned to exactly 2.13.0 in both `pubspec.yaml` and `rust/Cargo.toml`; the codegen CLI version must match. `lib/src/rust/` and `rust/src/frb_generated.rs` are generated — never hand-edit, regenerate instead.
 
 ## Architecture
 
@@ -58,4 +58,4 @@ The language/theme lists are duplicated between assets and Dart registries and m
 
 ### Native build
 
-`cargokit/` builds the Rust crate for each platform; the plugin is `ffiPlugin: true` for all five desktop/mobile platforms (no platform channel code). `RustLib.init()` is lazy and tolerates the host app having initialized FRB itself.
+The Rust crate is built through Dart native assets: `hook/build.dart` runs `FlutterRustBridgeNativeAssetsBuilder` (from `flutter_rust_bridge_hooks`) on `rust/`, using the toolchain pinned in `rust/rust-toolchain.toml` (no platform channel code). Keep `strip = false` in `rust/Cargo.toml`: rustc's stripping on Apple produces dylibs newer dyld won't load, and Flutter strips release dylibs itself on macOS/iOS. `RustLib.init()` is lazy and tolerates the host app having initialized FRB itself.
